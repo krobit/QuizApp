@@ -4,6 +4,7 @@ import 'package:quiz_app/widgets/option_card.dart';
 import '../constants.dart';
 import '../models/question_model.dart';
 import '../widgets/question_widget.dart';
+import '../widgets/result_box.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,22 +48,41 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   int index = 0;
+  int score = 0;
   bool isPressed = false;
+  bool isAlreadySelected = false;
 
   void nextQuestion() {
     if (index == _questions.length - 1) {
-      return;
+      showDialog(
+          context: context,
+          builder: (ctx) => ResultBox(
+                result: score,
+                questionLength: _questions.length,
+              ));
     } else {
-      setState(() {
-        index++;
-        isPressed = false;
-      });
+      if (isPressed) {
+        setState(() {
+          index++;
+          isPressed = false;
+          isAlreadySelected = false;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Please select any option"),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.symmetric(vertical: 20.0),
+        ));
+      }
     }
   }
 
-  void changeColor() {
+  void checkAnswerAndUpdate(bool value) {
+    if (value && !isPressed) {
+      score++;
+    }
     setState(() {
-      isPressed = !isPressed;
+      isPressed = true;
     });
   }
 
@@ -77,6 +97,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         backgroundColor: background,
         shadowColor: Colors.transparent,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(18.0),
+            child: Text(
+              "Score: $score",
+              style: const TextStyle(
+                color: neutral,
+                fontSize: 18.0,
+              ),
+            ),
+          )
+        ],
       ),
       body: Container(
         width: double.infinity,
@@ -94,14 +126,17 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 25.0,
           ),
           for (int i = 0; i < _questions[index].options.length; i++)
-            OptionCard(
-              option: _questions[index].options.keys.toList()[i],
-              color: isPressed
-                  ? _questions[index].options.values.toList()[i] == true
-                      ? correct
-                      : incorrect
-                  : neutral,
-              onTap: changeColor,
+            GestureDetector(
+              onTap: () => checkAnswerAndUpdate(
+                  _questions[index].options.values.toList()[i]),
+              child: OptionCard(
+                option: _questions[index].options.keys.toList()[i],
+                color: isPressed
+                    ? _questions[index].options.values.toList()[i] == true
+                        ? correct
+                        : incorrect
+                    : neutral,
+              ),
             ),
         ]),
       ),
